@@ -1,0 +1,73 @@
+name: "CodeQL Java Incremental PR"
+
+on:
+  pull_request:
+    branches: ["main", "master"]
+    paths:
+      - "**/*.java"
+      - "**/*.gradle"
+      - "**/*.gradle.kts"
+      - "**/settings.gradle"
+      - "**/settings.gradle.kts"
+      - ".github/workflows/codeql-java-incremental.yml"
+      - ".github/codeql/**"
+  push:
+    branches: ["main", "master"]
+    paths:
+      - "**/*.java"
+      - "**/*.gradle"
+      - "**/*.gradle.kts"
+      - "**/settings.gradle"
+      - "**/settings.gradle.kts"
+      - ".github/workflows/codeql-java-incremental.yml"
+      - ".github/codeql/**"
+  workflow_dispatch:
+
+permissions:
+  security-events: write
+  packages: read
+  actions: read
+  contents: read
+
+concurrency:
+  group: codeql-java-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  analyze-java:
+    name: Analyze Java PR (buildless incremental)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      CODEQL_RAM_MB: "6144"
+      CODEQL_THREADS: "2"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Initialize CodeQL for Java
+        uses: github/codeql-action/init@v4
+        with:
+          languages: java
+          build-mode: none
+          queries: security-extended,security-and-quality
+          ram: ${{ env.CODEQL_RAM_MB }}
+          threads: ${{ env.CODEQL_THREADS }}
+          trap-caching: true
+          dependency-caching: true
+
+      - name: Analyze Java
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:java/build-mode:none"
+          ram: ${{ env.CODEQL_RAM_MB }}
+          threads: ${{ env.CODEQL_THREADS }}
+          wait-for-processing: true

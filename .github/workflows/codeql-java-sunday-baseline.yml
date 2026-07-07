@@ -1,0 +1,56 @@
+name: "CodeQL Java Sunday Baseline"
+
+on:
+  schedule:
+    # Run every Sunday at 03:27 UTC to refresh the default-branch baseline.
+    - cron: "27 3 * * 0"
+  workflow_dispatch:
+
+permissions:
+  security-events: write
+  packages: read
+  actions: read
+  contents: read
+
+concurrency:
+  group: codeql-java-baseline-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  analyze-java:
+    name: Analyze Java Sunday baseline (buildless)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      CODEQL_RAM_MB: "6144"
+      CODEQL_THREADS: "2"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Initialize CodeQL for Java
+        uses: github/codeql-action/init@v4
+        with:
+          languages: java
+          build-mode: none
+          queries: security-extended,security-and-quality
+          ram: ${{ env.CODEQL_RAM_MB }}
+          threads: ${{ env.CODEQL_THREADS }}
+          trap-caching: true
+          dependency-caching: true
+
+      - name: Analyze Java
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:java/sunday-baseline/build-mode:none"
+          ram: ${{ env.CODEQL_RAM_MB }}
+          threads: ${{ env.CODEQL_THREADS }}
+          wait-for-processing: true
